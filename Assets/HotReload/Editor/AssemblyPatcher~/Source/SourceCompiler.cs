@@ -199,10 +199,10 @@ namespace ScriptHotReload
             var parseOptions = new CSharpParseOptions().WithPreprocessorSymbols(GlobalConfig.Instance.defines);
             for (int i = 0; i < _filesToCompile.Count; i++)
             {
-                codeTree[i] = CSharpSyntaxTree.ParseText(File.ReadAllText(_filesToCompile[i]), parseOptions);
+                codeTree[i] = CSharpSyntaxTree.ParseText(File.ReadAllText(_filesToCompile[i]), parseOptions,path: _filesToCompile[i], encoding: Encoding.UTF8);
             }
-            codeTree[_filesToCompile.Count] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Patch_Assembly_Attr__), parseOptions);
-            codeTree[_filesToCompile.Count+1] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__), parseOptions);
+            codeTree[_filesToCompile.Count] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Patch_Assembly_Attr__), parseOptions, path: s_CS_File_Path__Patch_Assembly_Attr__, encoding: Encoding.UTF8);
+            codeTree[_filesToCompile.Count+1] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__), parseOptions, path: s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__, encoding: Encoding.UTF8);
             var compilation = CSharpCompilation.Create(Utils.GetPatchDllName(moduleName),
                     codeTree, references,
                     compilationOptions);

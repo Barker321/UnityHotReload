@@ -130,7 +130,7 @@ public class GenericInstScanner
         foreach (var f in GlobalConfig.Instance.filesToCompile[_assemblyDataForPatch.name])
         {
             var fullPath = $"{Environment.CurrentDirectory}{spliter}{f.Replace('/', spliter)}";
-            fileChanged.Add(fullPath);
+            fileChanged.Add(f);
         }
 
         _gernericMethodFilter = new Dictionary<string, MethodDef>();
