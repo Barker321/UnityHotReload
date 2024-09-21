@@ -202,6 +202,7 @@ namespace ScriptHotReload
             }
 
             GenPatcherInputArgsFile();
+            HotReloadUtils.GetAllAssemblyPaths();
             ThreadPool.QueueUserWorkItem(RunAssemblyPatchProcess);
         }
 
@@ -221,7 +222,8 @@ namespace ScriptHotReload
             public string[] filesChanged;
 
             public string[] defines;
-            public string[] allAssemblyPathes;
+            public string unityPath;
+            public string projectPath;
         }
         static void GenPatcherInputArgsFile()
         {
@@ -239,7 +241,8 @@ namespace ScriptHotReload
             inputArgs.filesChanged = FileWatcher.GetChangedFile();
 
             inputArgs.defines = EditorUserBuildSettings.activeScriptCompilationDefines;
-            inputArgs.allAssemblyPathes = HotReloadUtils.GetAllAssemblyPaths();
+            inputArgs.unityPath = Path.GetDirectoryName(EditorApplication.applicationPath) + "/";
+            inputArgs.projectPath = Path.GetDirectoryName(Application.dataPath) + "/";
 
             patchDlls.Clear();
             foreach (var fileName in inputArgs.filesChanged)
@@ -310,6 +313,7 @@ namespace ScriptHotReload
                         string patchDllPath = string.Format(HotReloadConfig.kPatchDllPathFormat, dll, patchNo);
                         Assembly patchAssembly = Assembly.LoadFrom(patchDllPath);
                         Assembly oriAssembly = null;
+                        UnityEngine.Debug.Log("Try Hook dll: " + patchAssembly);
                         if (!HotReloadUtils.allAssembliesDic.TryGetValue(dll, out oriAssembly))
                         {
                             throw new Exception(string.Format("can not find assembly with name `{0}`", dll));

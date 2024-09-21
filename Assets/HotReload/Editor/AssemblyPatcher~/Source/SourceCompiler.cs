@@ -5,7 +5,11 @@
  */
 
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
+using Microsoft.CodeAnalysis;
+using Microsoft.CodeAnalysis.CSharp;
+using Microsoft.CodeAnalysis.Emit;
 
 namespace AssemblyPatcher;
 public class SourceCompiler
@@ -178,44 +182,41 @@ namespace ScriptHotReload
 
     int RunDotnetCompileProcess()
     {
-        var si = new ProcessStartInfo();
-        si.FileName = GlobalConfig.Instance.dotnetPath;
-        si.Arguments = $"exec \"{GlobalConfig.Instance.cscPath}\" /nostdlib /noconfig /shared \"@{_rspPath}\"";
-
-        si.CreateNoWindow = false;
-        si.UseShellExecute = false;
-        si.WindowStyle = ProcessWindowStyle.Hidden;
-        si.RedirectStandardOutput = true;
-        si.RedirectStandardError = true;
-        si.StandardOutputEncoding = Encoding.UTF8;
-        si.StandardErrorEncoding = Encoding.UTF8;
-        si.WorkingDirectory = Environment.CurrentDirectory;
-
-        var process = new Process();
-        process.StartInfo = si;
-        process.OutputDataReceived += (sender, args) =>
+        try
         {
-            if (args.Data != null)
+            var references = new List<PortableExecutableReference>();
+
+            foreach (var referenceFile in GlobalConfig.Instance.assemblyPathes.Values)
             {
-                if (args.Data.Contains("error "))
-                    Debug.LogError(args.Data);
-                else if(args.Data.Contains("warning "))
-                    Debug.LogWarning(args.Data);
-                else
-                    Debug.Log(args.Data);
+                references.Add(MetadataReference.CreateFromFile(referenceFile));
             }
-        };
-        process.ErrorDataReceived += (sender, args) =>
+            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).
+                    WithMetadataImportOptions(MetadataImportOptions.All)
+                    .WithOptimizationLevel(OptimizationLevel.Debug);
+            var topLevelBinderFlagsProperty = typeof(CSharpCompilationOptions).GetProperty("TopLevelBinderFlags", BindingFlags.Instance | BindingFlags.NonPublic);
+            topLevelBinderFlagsProperty.SetValue(compilationOptions, (uint)1 << 22);
+            SyntaxTree[] codeTree = new CSharpSyntaxTree[_filesToCompile.Count + 2];
+            var parseOptions = new CSharpParseOptions().WithPreprocessorSymbols(GlobalConfig.Instance.defines);
+            for (int i = 0; i < _filesToCompile.Count; i++)
+            {
+                codeTree[i] = CSharpSyntaxTree.ParseText(File.ReadAllText(_filesToCompile[i]), parseOptions);
+            }
+            codeTree[_filesToCompile.Count] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Patch_Assembly_Attr__), parseOptions);
+            codeTree[_filesToCompile.Count+1] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__), parseOptions);
+            var compilation = CSharpCompilation.Create(Utils.GetPatchDllName(moduleName),
+                    codeTree, references,
+                    compilationOptions);
+            using var dllStream = new FileStream(outputPath, FileMode.Create);
+            using var pdbStream = new FileStream(Path.ChangeExtension(outputPath, ".pdb"), FileMode.Create);
+            var emitOptions = new EmitOptions(debugInformationFormat: DebugInformationFormat.PortablePdb);
+            var result = compilation.Emit(dllStream, pdbStream, options: emitOptions);
+            return result.Success == true ? 0 : 1;
+        }
+        catch (Exception ex) 
         {
-            if (args.Data != null)
-                Debug.LogError(args.Data);
-        };
-        process.Start();
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
-        process.WaitForExit(kMaxCompileTime);
-
-        return process.ExitCode;
+            Debug.LogError(ex.ToString());
+            return 1;
+        }
     }
 
     private void Process_OutputDataReceived(object sender, DataReceivedEventArgs e)

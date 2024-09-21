@@ -54,6 +54,7 @@ namespace ScriptHotReload
                 changedSinceLastGet = false;
             }
 
+            //TODO
             for(int i = 0, imax = ret.Count; i < imax; i++)
             {
                 string filePath = ret[i];

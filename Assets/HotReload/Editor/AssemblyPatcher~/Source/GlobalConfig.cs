@@ -24,6 +24,8 @@ public class GlobalConfig
     public string builtinAssembliesDir;
     public string patchDllPathFormat;
     public string lambdaWrapperBackend;
+    public string unityPath;
+    public string projectPath;
 
     /// <summary>
     /// 需要编译的文件, key: AssemblyName, value: FileList
@@ -50,7 +52,8 @@ public class GlobalConfig
         config.lambdaWrapperBackend = root["lambdaWrapperBackend"];
 
         config.defines = root["defines"];
-        string[] allAsses = root["allAssemblyPathes"];
+        config.unityPath = root["unityPath"];
+        config.projectPath = root["projectPath"];
         config.assemblyPathes = new Dictionary<string, string>();
         config.userAssemblyPathes = new Dictionary<string, string>();
         config.searchPaths = new HashSet<string>();
@@ -68,6 +71,11 @@ public class GlobalConfig
             }
             files.Add(filePath);
         }
+
+        List<string> allAsses = new List<string>();
+        allAsses.AddRange(Directory.GetFiles(config.unityPath + @"Data\Managed\UnityEngine", "*.dll"));
+        allAsses.AddRange(Directory.GetFiles(config.projectPath + @"Library\ScriptAssemblies", "*.dll"));
+        allAsses.AddRange(Directory.GetFiles($"{config.unityPath}Data/MonoBleedingEdge/lib/mono/unity", "*.dll"));
 
         foreach (string ass in allAsses)
         {

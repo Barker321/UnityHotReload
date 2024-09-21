@@ -61,7 +61,11 @@ public static class ModuleDefPool
         string fullPath = GlobalConfig.Instance.assemblyPathes[moduleName];
 
         ret = new ModuleDefData() { name = moduleName };
-        ret.moduleDef = ModuleDefMD.Load(fullPath, ctx);
+        ret.moduleDef = ModuleDefMD.Load(fullPath, new ModuleCreationOptions(ctx)
+        {
+            TryToLoadPdbFromDisk = true
+        });
+        
         (ret.moduleDef.Context.AssemblyResolver as AssemblyResolver).AddToCache(ret.moduleDef);
 
         ret.assRef = new AssemblyRefUser(ret.moduleDef.Assembly);
