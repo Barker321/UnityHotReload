@@ -45,9 +45,6 @@ ExportedObj/
 *.mdb
 *.opendb
 *.VC.db
-/Assembly-Csharp-Editor.csproj
-/Assembly-Csharp.csproj
-/ShareCode.csproj
 
 # Unity3D generated meta files
 *.pidb.meta
@@ -74,4 +71,4 @@ crashlytics-build.properties
 /[Aa]ssets/[Ss]treamingAssets/aa/*
 
 #patch process obj
-/[Aa]ssets/HotReload/[Ee]ditor/AssemblyPatcher~/Source/obj/
+/[Aa]ssets/[Eeditor]/AssemblyPatcher~/Source/obj/*
