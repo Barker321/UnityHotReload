@@ -6,6 +6,7 @@
 
 using System.Diagnostics;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using Microsoft.CodeAnalysis;
 using Microsoft.CodeAnalysis.CSharp;
@@ -190,13 +191,20 @@ namespace ScriptHotReload
             {
                 references.Add(MetadataReference.CreateFromFile(referenceFile));
             }
-            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary).
-                    WithMetadataImportOptions(MetadataImportOptions.All)
-                    .WithOptimizationLevel(OptimizationLevel.Debug);
-            var topLevelBinderFlagsProperty = typeof(CSharpCompilationOptions).GetProperty("TopLevelBinderFlags", BindingFlags.Instance | BindingFlags.NonPublic);
+            
+            
+            var compilationOptions = new CSharpCompilationOptions(OutputKind.DynamicallyLinkedLibrary, metadataImportOptions: MetadataImportOptions.All)
+                .WithMetadataImportOptions(MetadataImportOptions.All)
+                .WithPlatform(Microsoft.CodeAnalysis.Platform.AnyCpu)
+                .WithOptimizationLevel(OptimizationLevel.Debug)
+                .WithAllowUnsafe(true)
+                .WithWarningLevel(0)
+                .WithAssemblyIdentityComparer(DesktopAssemblyIdentityComparer.Default);
+            var topLevelBinderFlagsProperty = typeof(CSharpCompilationOptions).GetProperty("TopLevelBinderFlags",
+                BindingFlags.Instance | BindingFlags.NonPublic);
             topLevelBinderFlagsProperty.SetValue(compilationOptions, (uint)1 << 22);
             SyntaxTree[] codeTree = new CSharpSyntaxTree[_filesToCompile.Count + 2];
-            var parseOptions = new CSharpParseOptions().WithPreprocessorSymbols(GlobalConfig.Instance.defines);
+            var parseOptions = CSharpParseOptions.Default.WithPreprocessorSymbols(GlobalConfig.Instance.defines);
             for (int i = 0; i < _filesToCompile.Count; i++)
             {
                 codeTree[i] = CSharpSyntaxTree.ParseText(File.ReadAllText(_filesToCompile[i]), parseOptions,path: _filesToCompile[i], encoding: Encoding.UTF8);
@@ -210,7 +218,22 @@ namespace ScriptHotReload
             using var pdbStream = new FileStream(Path.ChangeExtension(outputPath, ".pdb"), FileMode.Create);
             var emitOptions = new EmitOptions(debugInformationFormat: DebugInformationFormat.PortablePdb);
             var result = compilation.Emit(dllStream, pdbStream, options: emitOptions);
-            return result.Success == true ? 0 : 1;
+            if (!result.Success)
+            {
+                foreach(var log in result.Diagnostics)
+                {
+                    var logmessage = log.ToString();
+                    if(logmessage.Contains("error", StringComparison.OrdinalIgnoreCase))
+                    {
+                        Debug.LogError(logmessage);
+                    }
+                }
+                return 1;
+            }
+            else
+            {
+                return 0;
+            }
         }
         catch (Exception ex) 
         {

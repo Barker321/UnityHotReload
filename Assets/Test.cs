@@ -4,9 +4,9 @@ using UnityEngine;
 
 namespace A
 {
-    public class Test : MonoBehaviour
+    class Test : MonoBehaviour
     {
-        private cls a;
+        cls a;
         // Start is called before the first frame update
         void Start()
         {
@@ -20,13 +20,5 @@ namespace A
             a.name = "11";
             UnityEngine.Debug.Log(a.name);
         }
-    }
-}
-
-namespace A
-{
-    class cls
-    {
-        public string name;
     }
 }
