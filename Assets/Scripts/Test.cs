@@ -17,7 +17,7 @@ namespace A
         void Update()
         {
             a = new cls();
-            a.name = "11";
+            a.name = "121";
             UnityEngine.Debug.Log(a.name);
         }
     }

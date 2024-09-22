@@ -203,14 +203,16 @@ namespace ScriptHotReload
             var topLevelBinderFlagsProperty = typeof(CSharpCompilationOptions).GetProperty("TopLevelBinderFlags",
                 BindingFlags.Instance | BindingFlags.NonPublic);
             topLevelBinderFlagsProperty.SetValue(compilationOptions, (uint)1 << 22);
-            SyntaxTree[] codeTree = new CSharpSyntaxTree[_filesToCompile.Count + 2];
+            var allCsharpFile = Directory.GetFiles(Path.Combine(GlobalConfig.Instance.projectPath, "Assets", "Scripts"), "*.cs");
+            SyntaxTree[] codeTree = new CSharpSyntaxTree[allCsharpFile.Length + 2];
             var parseOptions = CSharpParseOptions.Default.WithPreprocessorSymbols(GlobalConfig.Instance.defines);
-            for (int i = 0; i < _filesToCompile.Count; i++)
+
+            for (int i = 0; i < allCsharpFile.Length; i++)
             {
-                codeTree[i] = CSharpSyntaxTree.ParseText(File.ReadAllText(_filesToCompile[i]), parseOptions,path: _filesToCompile[i], encoding: Encoding.UTF8);
+                codeTree[i] = CSharpSyntaxTree.ParseText(File.ReadAllText(allCsharpFile[i]), parseOptions,path: allCsharpFile[i].Replace('/', Path.DirectorySeparatorChar), encoding: Encoding.UTF8);
             }
-            codeTree[_filesToCompile.Count] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Patch_Assembly_Attr__), parseOptions, path: s_CS_File_Path__Patch_Assembly_Attr__, encoding: Encoding.UTF8);
-            codeTree[_filesToCompile.Count+1] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__), parseOptions, path: s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__, encoding: Encoding.UTF8);
+            codeTree[allCsharpFile.Length] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Patch_Assembly_Attr__), parseOptions, path: s_CS_File_Path__Patch_Assembly_Attr__, encoding: Encoding.UTF8);
+            codeTree[allCsharpFile.Length + 1] = CSharpSyntaxTree.ParseText(File.ReadAllText(s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__), parseOptions, path: s_CS_File_Path__Methods_For_Patch_Wrapper__Gen__, encoding: Encoding.UTF8);
             var compilation = CSharpCompilation.Create(Utils.GetPatchDllName(moduleName),
                     codeTree, references,
                     compilationOptions);
